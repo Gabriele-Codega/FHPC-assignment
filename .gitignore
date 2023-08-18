@@ -1,0 +1,10 @@
+# C files
+*.o
+*.x
+*.so
+obj/*
+
+# various
+.DS_Store
+.vscode
+*.pgm

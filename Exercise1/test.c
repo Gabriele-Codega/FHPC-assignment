@@ -1,9 +1,10 @@
 #include <stdio.h>
+#include <string.h>
 
 int main(){
-    int step = 3;
-    char fname[20];
-    sprintf(fname,"checkpoint_%05d.pgm",step);
-    puts(fname);
+    char* string;
+    string = strdup("ba,cs");
+    char* token = strsep(&string,",");
+    printf("%s,%s",token,string);
     return 0;
 }

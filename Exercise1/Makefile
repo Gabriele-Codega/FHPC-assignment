@@ -5,7 +5,7 @@ INCDIR = inc
 SRCDIR = src
 OBJDIR = obj
 
-main.x: $(OBJDIR)/main.o $(OBJDIR)/pgm_utils.o
+main.x: $(OBJDIR)/main.o $(OBJDIR)/pgm_utils.o $(OBJDIR)/evolution.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c

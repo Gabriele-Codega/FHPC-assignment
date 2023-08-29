@@ -1,24 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
 #include <time.h>
 
-#include <evolution.h>
-#include <pgm_utils.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+#include <mpi.h>
 
-#define TCPU_TIME (clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &ts ), (double)ts.tv_sec +	\
-		   (double)ts.tv_nsec * 1e-9)
+#include <evolution.h>
+#include <io_utils.h>
 
 #define INIT 1
 #define RUN  2
-
 #define K_DFLT 100
-
 #define ORDERED 0
 #define STATIC  1
-
 
 
 int main(int argc, char** argv){
@@ -34,6 +32,7 @@ int main(int argc, char** argv){
     char *fname  = NULL;
     char *optstring = "irk:e:f:n:s:";
 
+    /* read input from user */
     int c;
     char* xval = NULL;
     while ((c = getopt(argc, argv, optstring)) != -1) {
@@ -46,7 +45,7 @@ int main(int argc, char** argv){
         action = RUN; break;
         
         case 'k':
-        xval = (char*)malloc( sizeof(optarg)+1 );
+        xval = (char*)malloc( strlen(optarg)+1 );
         xval = strsep(&optarg,",");
         xsize = atoi(xval);
         ysize = atoi(optarg);
@@ -56,7 +55,7 @@ int main(int argc, char** argv){
         e = atoi(optarg); break;
 
         case 'f':
-        fname = (char*)malloc( sizeof(optarg)+1 );
+        fname = (char*)malloc( strlen(optarg)+1 );
         sprintf(fname, "%s", optarg );
         break;
 
@@ -67,45 +66,101 @@ int main(int argc, char** argv){
         s = atoi(optarg); break;
 
         default :
-        printf("argument -%c not known\n", c ); break;
+        printf("Argument -%c not known\n", c ); break;
         }
     }
+    if (s==0) s = n;
     
 
 
-
+    /* choose whether to initialise a playground or run */
     if (action == INIT){
-        char* grid = (char*) malloc(xsize*ysize*sizeof(char));
-
-        for (int i = 0; i<ysize;i++){
-            int irow = i *xsize; 
-            for (int j = 0;j<xsize;j++){
-                grid[irow + j] = 0;
-            }
+        int provided;
+        MPI_Init_thread(NULL,NULL,MPI_THREAD_SERIALIZED,&provided);
+        if(provided < MPI_THREAD_SERIALIZED){
+            printf("Provided thread level lower than required\n");
+            fflush(stdout);
+            MPI_Finalize();
+            exit(1);
         }
-        grid[5 * xsize + 2] = 1;
-        grid[5 * xsize + 3] = 1;
-        grid[5 * xsize + 4] = 1;
+        char* grid = NULL;
 
-        write_pgm_image((void*)grid,1,xsize,ysize,fname);
+        #pragma omp parallel shared(grid)
+        {
+            int numproc;
+            int procrank;
+            #pragma omp single copyprivate(numproc,procrank)
+            {
+                MPI_Comm_size(MPI_COMM_WORLD,&numproc);
+                MPI_Comm_rank(MPI_COMM_WORLD,&procrank);
+            }
+            int numthreads = omp_get_num_threads();
+            int thid = omp_get_thread_num();
+
+
+            int procwork ;
+            MPI_Offset procoffset;
+            int thwork;
+            int thoffset;
+
+            procwork = ysize/numproc + (procrank< (ysize%numproc));
+            procoffset = ysize/numproc * procrank + (procrank >= (ysize%numproc)) * (ysize%numproc) + (procrank < (ysize%numproc)) * procrank;
+            thwork = procwork/numthreads + (thid< (procwork%numthreads));
+            thoffset = procwork/numthreads * thid + (thid >= (procwork%numthreads)) * (procwork%numthreads) + (thid < (procwork%numthreads)) * thid;
+            thwork *= xsize;
+            thoffset *= xsize;
+            procwork *= xsize;
+            procoffset *= xsize;
+
+            #pragma omp master
+                grid = (char*) malloc(xsize*ysize*sizeof(char));
+        
+            long int seed = time(NULL) + thid + procrank;
+            srand48(seed);
+            #pragma omp for
+                for (int i = 0; i<procwork/xsize;i++){
+                    int irow = i *xsize; 
+                    for (int j = 0;j<xsize;j++){
+                        grid[irow + j] = (int)(drand48()*2);
+                    }
+                }
+
+            MPI_File fhout;
+            int writeoffset;
+
+            #pragma omp single copyprivate(fhout,writeoffset)
+            {
+                if(procrank == 0){
+                    write_header(fname,xsize,ysize,1,&writeoffset);
+                }
+                MPI_Barrier(MPI_COMM_WORLD);
+
+                MPI_Bcast(&writeoffset, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+                MPI_File_open(MPI_COMM_WORLD,fname,MPI_MODE_WRONLY,MPI_INFO_NULL,&fhout);
+                MPI_Offset start;
+                MPI_File_get_position_shared(fhout,&start);
+                MPI_Barrier(MPI_COMM_WORLD);
+
+                writeoffset += start;
+            }
+            #pragma omp barrier
+
+            MPI_Status status;
+            #pragma omp critical
+                MPI_File_write_at_all(fhout,writeoffset+procoffset+thoffset, (void*)(grid+thoffset),thwork,MPI_BYTE,&status);
+            #pragma omp barrier
+            #pragma omp single
+                MPI_File_close(&fhout);
+        }
+        MPI_Finalize();
     } else if (action == RUN) {
 
-        /* read initial condition from file */
-
-        void* ptr = NULL; // redundant??
-        xsize = 0;
-        ysize = 0;
-        int maxval = 0;
-
-        read_pgm_image(&ptr,&maxval,&xsize,&ysize,fname);
-        char* grid = (char*) ptr;
-        char* neigh = NULL;
-
-        void (*evolution)(char*, char*, const int, const int, const int, const int, const int) = NULL;
-
-        struct timespec ts;
-        double tstart,tend;
-
+        /* select correct evolution routine */
+        void (*evolution)(char* , char* , const int , const int , 
+                        const int , const int , const int ,
+                        const int , const int ,
+                        const int , const int ) = NULL;
         switch (e)
         {
         case ORDERED:
@@ -120,10 +175,121 @@ int main(int argc, char** argv){
             return 1;
         }
 
-        tstart = TCPU_TIME;
-        (*evolution)(grid,neigh,n,s,maxval,xsize,ysize);
-        tend = TCPU_TIME-tstart;
+        /* initialise MPI */
+        int provided;
+        MPI_Init_thread(NULL,NULL,MPI_THREAD_SERIALIZED,&provided);
+        if(provided < MPI_THREAD_SERIALIZED){
+            printf("Provided thread level lower than required\n");
+            fflush(stdout);
+            MPI_Finalize();
+            exit(1);
+        }
+
+        /* get information about process */
+        int numproc;
+        int procrank;
+        MPI_Comm_size(MPI_COMM_WORLD,&numproc);
+        MPI_Comm_rank(MPI_COMM_WORLD,&procrank);
+        int params[4];
+
+        /* read the header of input file */
+        if (procrank==0){    
+            read_header(fname, params);
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        MPI_Bcast(params, 4, MPI_INT, 0, MPI_COMM_WORLD);
+        int xsize = params[0];
+        int ysize = params[1];
+        int maxval = params[2];
+        int globaloffset = params[3];
+
+        /* open a shared file and get the starting point for the data */
+        MPI_File fh;
+        MPI_Offset filestart;
+        MPI_File_open(MPI_COMM_WORLD, fname,MPI_MODE_RDONLY,MPI_INFO_NULL,&fh);
+        MPI_File_get_position_shared(fh, &filestart);
+        MPI_Barrier(MPI_COMM_WORLD);
+        globaloffset += filestart;
+        
+        /* figure out workload and offset for each process (in rows) */
+
+        static int procwork ;
+        static MPI_Offset procoffset;
+        static int thwork;
+        static int thoffset;
+        #pragma omp threadprivate(procwork,procoffset,thwork,thoffset)
+
+        procwork = ysize/numproc + (procrank< (ysize%numproc));
+        procoffset = ysize/numproc * procrank + (procrank >= (ysize%numproc)) * (ysize%numproc) + (procrank < (ysize%numproc)) * procrank;
+
+        char* mygrid = (char*)malloc(procwork*xsize + 2*xsize);
+        char* myneigh = NULL; 
+        if(e == STATIC){
+            myneigh = (char*)malloc(procwork*xsize);
+        }
+
+        #pragma omp parallel copyin(procwork, procoffset)
+        {
+            int numthreads = omp_get_num_threads();
+            int thid = omp_get_thread_num();
+            thwork = procwork/numthreads + (thid< (procwork%numthreads));
+            thoffset = procwork/numthreads * thid + (thid >= (procwork%numthreads)) * (procwork%numthreads) + (thid < (procwork%numthreads)) * thid;
+            thwork *= xsize;
+            thoffset *= xsize;
+            procwork *= xsize;
+            procoffset *= xsize;
+
+            read_data(fh, mygrid+xsize,thwork, thoffset, procoffset, globaloffset);
+        }
+        MPI_File_close(&fh);
+
+        #ifdef TIMEIT
+        double tstart,tend;
+        tstart = omp_get_wtime();
+        #endif
+        #pragma omp parallel
+        {
+            (*evolution)(mygrid,myneigh,n,s,
+                        maxval,xsize,ysize,
+                        procwork, procoffset,
+                        thwork, thoffset);
+        }
+        #ifdef TIMEIT
+        tend = omp_get_wtime()-tstart;
+
+        double* times = NULL;
+        if (procrank == 0){
+            times = (double*)malloc(numproc * sizeof(double));
+        }
+        MPI_Gather(&tend, 1, MPI_DOUBLE, times, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        if (procrank==0){
+            int numthreads;
+            #pragma omp parallel
+            {
+                #pragma omp single
+                numthreads = omp_get_num_threads();
+            }
+            FILE* timefile;
+            if( (timefile = fopen("timings.csv","a")) )
+            {
+                fprintf(timefile,"%d,%d,",numproc,numthreads);
+                for (int i =0; i < numproc; i++){
+                    fprintf(timefile,"%f,",times[i]);
+                }
+                fprintf(timefile,"\n");
+                fclose(timefile);
+            } else {
+                printf("Couldn't write times.\n");
+            }
+        }
+        free(times);
         printf("Elapsed time: %f s\n",tend);
+        #endif
+
+        free(mygrid);
+        free(myneigh);
+        MPI_Finalize();
 
 
     }

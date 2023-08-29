@@ -1,9 +1,13 @@
 # C files
 *.o
 *.x
-*.so
-obj/*
+obj/*.o
 
 # various
 .DS_Store
 *.pgm
+junk/
+test/
+
+# executable
+GameOfLife

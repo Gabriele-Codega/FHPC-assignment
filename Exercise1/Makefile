@@ -1,16 +1,23 @@
-CC = gcc
+CC = mpicc
+CFLAGS = -Wall -Winline -march=native -O3 -fopenmp
+DFLAGS = 
 
-CFLAGS = -Wall -O3 -march=native
 INCDIR = inc
-SRCDIR = src
 OBJDIR = obj
+SRCDIR = src
 
-main.x: $(OBJDIR)/main.o $(OBJDIR)/pgm_utils.o $(OBJDIR)/evolution.o
-	$(CC) $(CFLAGS) $^ -o $@
+TARGET = GameOfLife
+SOURCES = $(wildcard $(SRCDIR)/*.c)
+OBJECTS = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SOURCES))
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c
-	$(CC) $(CFLAGS) -c -I$(INCDIR) $^ -o $@
+all: clean $(TARGET)
 
+timeit: DFLAGS += -DTIMEIT 
+timeit: clean $(TARGET)
+
+$(TARGET): $(OBJECTS)
+	$(CC) -I$(INCDIR) $(CFLAGS) -o $@ $^ $(DFLAGS)
+$(OBJECTS): $(OBJDIR)/%.o: $(SRCDIR)/%.c
+	$(CC) -c -I$(INCDIR) $(CFLAGS) $< -o $@ $(DFLAGS)
 clean:
-	rm *.x
-	rm $(OBJDIR)/*.o
+	rm -f $(OBJDIR)/*.o $(TARGET)

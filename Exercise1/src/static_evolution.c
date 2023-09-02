@@ -43,62 +43,190 @@ static_evolution(char* full_grid, char* neigh, const int n, const int s,
     #ifdef TIMEIT
     double tstart_comm, total_time_comm=0;
     double tstart_grid, total_time_grid=0;
+    double tstart_idle, total_time_idle=0;
     #endif
     
 
     /* static evolution loop */
     for (int step = 1; step <=n ; step++){
 
-        #ifdef TIMEIT
-        tstart_comm = omp_get_wtime();
-        #endif
-
         /* communicating boundaries */
         if (procrank%2==0){
-            if (thid==0)
+            if (thid==0){
+                #ifdef TIMEIT
+                tstart_comm = omp_get_wtime();
+                #endif
                 MPI_Irecv(top_boundary, xsize, MPI_BYTE, prev_proc ,BOT_TO_TOP,MPI_COMM_WORLD, &rcv_top);
+                #ifdef TIMEIT
+                total_time_comm += omp_get_wtime()-tstart_comm;
+                #endif
+            }
+            #ifdef TIMEIT
+            tstart_idle = omp_get_wtime();
+            #endif
             #pragma omp barrier
+            #ifdef TIMEIT
+            total_time_idle += omp_get_wtime()-tstart_idle;
+            #endif
 
-            if (thid == numthreads-1)
+            if (thid == numthreads-1){
+                #ifdef TIMEIT
+                tstart_comm = omp_get_wtime();
+                #endif
                 MPI_Irecv(bot_boundary, xsize, MPI_BYTE, next_proc,TOP_TO_BOT,MPI_COMM_WORLD, &rcv_bot);
+                #ifdef TIMEIT
+                total_time_comm += omp_get_wtime()-tstart_comm;
+                #endif
+            }
+            #ifdef TIMEIT
+            tstart_idle = omp_get_wtime();
+            #endif
             #pragma omp barrier
+            #ifdef TIMEIT
+            total_time_idle += omp_get_wtime()-tstart_idle;
+            #endif
 
-            if (thid==0)
+            if (thid==0){
+                #ifdef TIMEIT
+                tstart_comm = omp_get_wtime();
+                #endif
                 MPI_Send(grid, xsize, MPI_BYTE, prev_proc, TOP_TO_BOT, MPI_COMM_WORLD);
+                #ifdef TIMEIT
+                total_time_comm += omp_get_wtime()-tstart_comm;
+                #endif
+            }
+            #ifdef TIMEIT
+            tstart_idle = omp_get_wtime();
+            #endif
             #pragma omp barrier
+            #ifdef TIMEIT
+            total_time_idle += omp_get_wtime()-tstart_idle;
+            #endif
         
-            if (thid == numthreads-1)
+            if (thid == numthreads-1){
+                #ifdef TIMEIT
+                tstart_comm = omp_get_wtime();
+                #endif
                 MPI_Send(bot_boundary-xsize, xsize, MPI_BYTE, next_proc, BOT_TO_TOP, MPI_COMM_WORLD);
+                #ifdef TIMEIT
+                total_time_comm += omp_get_wtime()-tstart_comm;
+                #endif
+            }
+            #ifdef TIMEIT
+            tstart_idle = omp_get_wtime();
+            #endif
             #pragma omp barrier
+            #ifdef TIMEIT
+            total_time_idle += omp_get_wtime()-tstart_idle;
+            #endif
 
         } else {
-            if (thid==0)
+            if (thid==0){
+                #ifdef TIMEIT
+                tstart_comm = omp_get_wtime();
+                #endif
                 MPI_Send(grid, xsize, MPI_BYTE, prev_proc, TOP_TO_BOT, MPI_COMM_WORLD);
+                #ifdef TIMEIT
+                total_time_comm += omp_get_wtime()-tstart_comm;
+                #endif
+            }
+            #ifdef TIMEIT
+            tstart_idle = omp_get_wtime();
+            #endif
             #pragma omp barrier
+            #ifdef TIMEIT
+            total_time_idle += omp_get_wtime()-tstart_idle;
+            #endif
         
-            if (thid == numthreads-1)
+            if (thid == numthreads-1){
+                #ifdef TIMEIT
+                tstart_comm = omp_get_wtime();
+                #endif
                 MPI_Send(bot_boundary-xsize, xsize, MPI_BYTE, next_proc, BOT_TO_TOP, MPI_COMM_WORLD);
+                #ifdef TIMEIT
+                total_time_comm += omp_get_wtime()-tstart_comm;
+                #endif
+            }
+            #ifdef TIMEIT
+            tstart_idle = omp_get_wtime();
+            #endif
             #pragma omp barrier
+            #ifdef TIMEIT
+            total_time_idle += omp_get_wtime()-tstart_idle;
+            #endif
 
-            if (thid==0)
+            if (thid==0){
+                #ifdef TIMEIT
+                tstart_comm = omp_get_wtime();
+                #endif
                 MPI_Irecv(top_boundary, xsize, MPI_BYTE, prev_proc, BOT_TO_TOP,MPI_COMM_WORLD, &rcv_top);
+                #ifdef TIMEIT
+                total_time_comm += omp_get_wtime()-tstart_comm;
+                #endif
+            }
+            #ifdef TIMEIT
+            tstart_idle = omp_get_wtime();
+            #endif
             #pragma omp barrier
+            #ifdef TIMEIT
+            total_time_idle += omp_get_wtime()-tstart_idle;
+            #endif
 
-            if (thid == numthreads-1)
+            if (thid == numthreads-1){
+                #ifdef TIMEIT
+                tstart_comm = omp_get_wtime();
+                #endif
                 MPI_Irecv(bot_boundary, xsize, MPI_BYTE, next_proc,TOP_TO_BOT,MPI_COMM_WORLD, &rcv_bot);
+                #ifdef TIMEIT
+                total_time_comm += omp_get_wtime()-tstart_comm;
+                #endif
+            }
+            #ifdef TIMEIT
+            tstart_idle = omp_get_wtime();
+            #endif
             #pragma omp barrier
+            #ifdef TIMEIT
+            total_time_idle += omp_get_wtime()-tstart_idle;
+            #endif
 
         }
-        if (thid == 0)
-            MPI_Wait(&rcv_top,MPI_STATUS_IGNORE);
-        #pragma omp barrier
-        if (thid == numthreads - 1)
-            MPI_Wait(&rcv_bot,MPI_STATUS_IGNORE);
-        #pragma omp barrier
 
+        /* wait for top boundary */
+        if (thid == 0){
+            #ifdef TIMEIT
+            tstart_comm = omp_get_wtime();
+            #endif
+            MPI_Wait(&rcv_top,MPI_STATUS_IGNORE);
+            #ifdef TIMEIT
+            total_time_comm += omp_get_wtime()-tstart_comm;
+            #endif
+        }
         #ifdef TIMEIT
-        total_time_comm += omp_get_wtime()-tstart_comm;
+        tstart_idle = omp_get_wtime();
         #endif
+        #pragma omp barrier
+        #ifdef TIMEIT
+        total_time_idle += omp_get_wtime()-tstart_idle;
+        #endif
+
+        /* wait for bottom boundary */
+        if (thid == numthreads - 1){
+            #ifdef TIMEIT
+            tstart_comm = omp_get_wtime();
+            #endif
+            MPI_Wait(&rcv_bot,MPI_STATUS_IGNORE);
+            #ifdef TIMEIT
+            total_time_comm += omp_get_wtime()-tstart_comm;
+            #endif
+        }
+        #ifdef TIMEIT
+        tstart_idle = omp_get_wtime();
+        #endif
+        #pragma omp barrier
+        #ifdef TIMEIT
+        total_time_idle += omp_get_wtime()-tstart_idle;
+        #endif
+
 
         
         #ifdef TIMEIT
@@ -146,7 +274,7 @@ static_evolution(char* full_grid, char* neigh, const int n, const int s,
 
     free(cp_fname);
     #ifdef TIMEIT
-    printf("Comm: %f, Grid: %f\n", total_time_comm, total_time_grid);
+    printf("(p: %d, t: %d) Comm: %f, Grid: %f, Idle: %f\n", procrank, thid, total_time_comm, total_time_grid, total_time_idle);
     #endif
 
 }

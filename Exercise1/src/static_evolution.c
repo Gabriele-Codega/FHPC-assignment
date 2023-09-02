@@ -50,7 +50,6 @@ static_evolution(char* full_grid, char* neigh, const int n, const int s,
     for (int step = 1; step <=n ; step++){
 
         #ifdef TIMEIT
-        // #pragma omp single copyprivate(tstart_comm,total_time_comm)
         tstart_comm = omp_get_wtime();
         #endif
 
@@ -98,13 +97,11 @@ static_evolution(char* full_grid, char* neigh, const int n, const int s,
         #pragma omp barrier
 
         #ifdef TIMEIT
-        // #pragma omp single copyprivate(tstart_comm,total_time_comm)
         total_time_comm += omp_get_wtime()-tstart_comm;
         #endif
 
         
         #ifdef TIMEIT
-        // #pragma omp single copyprivate(tstart_grid,total_time_grid)
         tstart_grid = omp_get_wtime();
         #endif
         /* compute number of live neighbours */
@@ -135,7 +132,6 @@ static_evolution(char* full_grid, char* neigh, const int n, const int s,
             }
         }
         #ifdef TIMEIT
-        // #pragma omp single copyprivate(tstart_grid,total_time_grid)
         total_time_grid += omp_get_wtime()-tstart_grid;
         #endif
 
@@ -150,7 +146,6 @@ static_evolution(char* full_grid, char* neigh, const int n, const int s,
 
     free(cp_fname);
     #ifdef TIMEIT
-    // #pragma omp single
     printf("Comm: %f, Grid: %f\n", total_time_comm, total_time_grid);
     #endif
 

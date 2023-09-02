@@ -5,9 +5,13 @@ obj/*.o
 
 # various
 .DS_Store
-*.pgm
 junk/
 test/
+
+# data
+*.pgm
+!imgs/*.pgm
+*.csv
 
 # executable
 GameOfLife

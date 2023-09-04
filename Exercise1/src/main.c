@@ -30,7 +30,13 @@ int main(int argc, char** argv){
     int   n      = 10000;
     int   s      = 1;
     char *fname  = NULL;
+
+    #ifdef TIMEIT
+    char *optstring = "irk:e:f:n:s:t:";
+    char* timefile = NULL;
+    #else
     char *optstring = "irk:e:f:n:s:";
+    #endif
 
     /* read input from user */
     int c;
@@ -65,11 +71,19 @@ int main(int argc, char** argv){
         case 's':
         s = atoi(optarg); break;
 
+        #ifdef TIMEIT
+        case 't':
+        timefile = (char*)malloc( strlen(optarg)+1 );
+        sprintf(timefile, "%s", optarg );
+        break;
+        #endif
+
         default :
         printf("Argument -%c not known\n", c ); break;
         }
     }
     if (s==0) s = n;
+
     
 
 
@@ -83,6 +97,7 @@ int main(int argc, char** argv){
             MPI_Finalize();
             exit(1);
         }
+
         char* grid = NULL;
 
         #pragma omp parallel shared(grid)
@@ -112,8 +127,17 @@ int main(int argc, char** argv){
             procwork *= xsize;
             procoffset *= xsize;
 
-            #pragma omp master
-                grid = (char*) malloc(xsize*ysize*sizeof(char));
+            #pragma omp single
+            {
+                grid = (char*) malloc(procwork*sizeof(char));
+                if (grid == NULL )
+                {
+                    printf("Could not allocate a grid. Aborting.\n");
+                    fflush(stdout);
+                    MPI_Finalize();
+                    exit(3);
+                }
+            }
         
             long int seed = time(NULL) + thid + procrank;
             srand48(seed);
@@ -154,6 +178,7 @@ int main(int argc, char** argv){
                 MPI_File_close(&fhout);
         }
         MPI_Finalize();
+        free(grid);
     } else if (action == RUN) {
 
         /* select correct evolution routine */
@@ -228,6 +253,11 @@ int main(int argc, char** argv){
         if(e == STATIC){
             myneigh = (char*)malloc(procwork*xsize);
         }
+        if(!mygrid || !myneigh){
+            printf("Could not allcoate grid or neighbours. Aborting.\n");
+            MPI_Finalize();
+            exit(3);
+        }
 
         #pragma omp parallel copyin(procwork, procoffset)
         {
@@ -270,15 +300,15 @@ int main(int argc, char** argv){
                 #pragma omp single
                 numthreads = omp_get_num_threads();
             }
-            FILE* timefile;
-            if( (timefile = fopen("timings.csv","a")) )
+            FILE* timefh;
+            if( (timefh = fopen(timefile,"a")) )
             {
-                fprintf(timefile,"%d,%d,",numproc,numthreads);
+                fprintf(timefh,"%d,%d,",numproc,numthreads);
                 for (int i =0; i < numproc; i++){
-                    fprintf(timefile,"%f,",times[i]);
+                    fprintf(timefh,"%f,",times[i]);
                 }
-                fprintf(timefile,"\n");
-                fclose(timefile);
+                fprintf(timefh,"\n");
+                fclose(timefh);
             } else {
                 printf("Couldn't write times.\n");
             }
@@ -290,8 +320,6 @@ int main(int argc, char** argv){
         free(mygrid);
         free(myneigh);
         MPI_Finalize();
-
-
     }
 
     return 0;

@@ -17,6 +17,7 @@ To execute the code, use `mpirun` and supply some command-line arguments:
 - `-e INT` : type of evolution scheme to follow
     - 0 : ordered evolution
     - 1 : static evolution
+- `-t FILE_NAME` : **when compiled with `timeit`**, specify the file, in csv, on which the measurements should be written.
 
 
 ## Files in this directory

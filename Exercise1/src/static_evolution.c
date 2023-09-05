@@ -44,9 +44,14 @@ static_evolution(char* full_grid, char* neigh, const int n, const int s,
     double tstart_comm, total_time_comm=0;
     double tstart_grid, total_time_grid=0;
     double tstart_idle, total_time_idle=0;
+    double tstart_write, total_time_write=0;
+    double tstart, tend=0;
     #endif
     
 
+    #ifdef TIMEIT
+    tstart = omp_get_wtime();
+    #endif
     /* static evolution loop */
     for (int step = 1; step <=n ; step++){
 
@@ -267,14 +272,25 @@ static_evolution(char* full_grid, char* neigh, const int n, const int s,
         
         /* write a checkpoint if required */
         if (step%s == 0){
+            #ifdef TIMEIT
+            tstart_write = omp_get_wtime()
+            #endif
             write_checkpoint(cp_fname,step,grid,procrank,procoffset,thoffset,thwork,xsize,ysize,maxval);     
+            #ifdef TIMEIT
+            total_time_write += omp_get_wtime()-tstart_write;
+            #endif
         }
 
     }/* evolution step */
+    #ifdef TIMEIT
+    tend = omp_get_wtime()-tstart;
+    #endif
 
     free(cp_fname);
     #ifdef TIMEIT
-    printf("(p: %d, t: %d) Comm: %f, Grid: %f, Idle: %f\n", procrank, thid, total_time_comm, total_time_grid, total_time_idle);
+    printf("# nprocs, nthreads, total, procrank, thid, comm, grid, idle, write\n")
+    printf("%d,%d,%f,%d,%d,%f,%f,%f\n",numproc,numthreads,tend, procrank, thid, total_time_comm, total_time_grid, total_time_idle, total_time_write);
+    //printf("(p: %d, t: %d) Comm: %f, Grid: %f, Idle: %f, Write: %f\n", procrank, thid, total_time_comm, total_time_grid, total_time_idle, total_time_write);
     #endif
 
 }

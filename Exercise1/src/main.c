@@ -314,7 +314,7 @@ int main(int argc, char** argv){
             }
         }
         free(times);
-        printf("Elapsed time: %f s\n",tend);
+        // printf("Elapsed time: %f s\n",tend);
         #endif
 
         free(mygrid);

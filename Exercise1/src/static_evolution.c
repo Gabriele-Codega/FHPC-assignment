@@ -288,7 +288,7 @@ static_evolution(char* full_grid, char* neigh, const int n, const int s,
 
     free(cp_fname);
     #ifdef TIMEIT
-    printf("# nprocs, nthreads, total, procrank, thid, comm, grid, idle, write\n")
+    // printf("# nprocs, nthreads, total, procrank, thid, comm, grid, idle, write\n")
     printf("%d,%d,%f,%d,%d,%f,%f,%f\n",numproc,numthreads,tend, procrank, thid, total_time_comm, total_time_grid, total_time_idle, total_time_write);
     //printf("(p: %d, t: %d) Comm: %f, Grid: %f, Idle: %f, Write: %f\n", procrank, thid, total_time_comm, total_time_grid, total_time_idle, total_time_write);
     #endif

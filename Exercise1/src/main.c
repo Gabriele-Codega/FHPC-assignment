@@ -274,10 +274,10 @@ int main(int argc, char** argv){
         }
         MPI_File_close(&fh);
 
-        #ifdef TIMEIT
-        double tstart,tend;
-        tstart = omp_get_wtime();
-        #endif
+        // #ifdef TIMEIT
+        // double tstart,tend;
+        // tstart = omp_get_wtime();
+        // #endif
         #pragma omp parallel
         {
             (*evolution)(mygrid,myneigh,n,s,
@@ -285,37 +285,37 @@ int main(int argc, char** argv){
                         procwork, procoffset,
                         thwork, thoffset);
         }
-        #ifdef TIMEIT
-        tend = omp_get_wtime()-tstart;
+        // #ifdef TIMEIT
+        // tend = omp_get_wtime()-tstart;
 
-        double* times = NULL;
-        if (procrank == 0){
-            times = (double*)malloc(numproc * sizeof(double));
-        }
-        MPI_Gather(&tend, 1, MPI_DOUBLE, times, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        if (procrank==0){
-            int numthreads;
-            #pragma omp parallel
-            {
-                #pragma omp single
-                numthreads = omp_get_num_threads();
-            }
-            FILE* timefh;
-            if( (timefh = fopen(timefile,"a")) )
-            {
-                fprintf(timefh,"%d,%d,",numproc,numthreads);
-                for (int i =0; i < numproc; i++){
-                    fprintf(timefh,"%f,",times[i]);
-                }
-                fprintf(timefh,"\n");
-                fclose(timefh);
-            } else {
-                printf("Couldn't write times.\n");
-            }
-        }
-        free(times);
+        // double* times = NULL;
+        // if (procrank == 0){
+        //     times = (double*)malloc(numproc * sizeof(double));
+        // }
+        // MPI_Gather(&tend, 1, MPI_DOUBLE, times, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        // if (procrank==0){
+        //     int numthreads;
+        //     #pragma omp parallel
+        //     {
+        //         #pragma omp single
+        //         numthreads = omp_get_num_threads();
+        //     }
+        //     FILE* timefh;
+        //     if( (timefh = fopen(timefile,"a")) )
+        //     {
+        //         fprintf(timefh,"%d,%d,",numproc,numthreads);
+        //         for (int i =0; i < numproc; i++){
+        //             fprintf(timefh,"%f,",times[i]);
+        //         }
+        //         fprintf(timefh,"\n");
+        //         fclose(timefh);
+        //     } else {
+        //         printf("Couldn't write times.\n");
+        //     }
+        // }
+        // free(times);
         // printf("Elapsed time: %f s\n",tend);
-        #endif
+        // #endif
 
         free(mygrid);
         free(myneigh);

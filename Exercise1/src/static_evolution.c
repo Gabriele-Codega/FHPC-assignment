@@ -273,7 +273,7 @@ static_evolution(char* full_grid, char* neigh, const int n, const int s,
         /* write a checkpoint if required */
         if (step%s == 0){
             #ifdef TIMEIT
-            tstart_write = omp_get_wtime()
+            tstart_write = omp_get_wtime();
             #endif
             write_checkpoint(cp_fname,step,grid,procrank,procoffset,thoffset,thwork,xsize,ysize,maxval);     
             #ifdef TIMEIT

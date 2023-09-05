@@ -8,6 +8,9 @@ obj/*.o
 junk/
 test/
 
+# slurm
+*.out
+
 # data
 *.pgm
 !imgs/*.pgm

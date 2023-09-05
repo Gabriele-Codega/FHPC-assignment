@@ -15,7 +15,7 @@ mpirun -np 1 GameOfLife -r -f imgs/init.pgm -n 5000 -s 0 -e 1 -t $1
 
 touch $1
 echo "# nproc, nthreads, time" >> $1
-for n in {1..8}
+for n in {1..64}
 do
     export OMP_NUM_THREADS=$n
     echo Currently using $n threads.

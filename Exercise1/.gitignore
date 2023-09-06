@@ -14,7 +14,6 @@ test/
 # data
 *.pgm
 !imgs/*.pgm
-*.csv
 
 # executable
 GameOfLife

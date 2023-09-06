@@ -9,12 +9,27 @@
 #define BOT_TO_TOP 1
 #define TOP_TO_BOT 2
 
+#ifdef TIMEIT
+extern double* time_array;
+#endif
+
 void 
 static_evolution(char* full_grid, char* neigh, const int n, const int s, 
                 const int maxval, const int xsize, const int ysize,
                 const int procwork, const int procoffset,
                 const int thwork, const int thoffset)
 {
+    /* initialise timing variables */
+    #ifdef TIMEIT
+    double tstart_comm, total_time_comm=0;
+    double tstart_grid, total_time_grid=0;
+    double tstart_idle, total_time_idle=0;
+    double tstart_write, total_time_write=0;
+    double tstart, tend=0;
+
+    tstart = omp_get_wtime();
+    #endif
+
     /* get info about process and thread */
     int procrank;
     int numproc;
@@ -40,18 +55,6 @@ static_evolution(char* full_grid, char* neigh, const int n, const int s,
 
     MPI_Request rcv_top,rcv_bot;
 
-    #ifdef TIMEIT
-    double tstart_comm, total_time_comm=0;
-    double tstart_grid, total_time_grid=0;
-    double tstart_idle, total_time_idle=0;
-    double tstart_write, total_time_write=0;
-    double tstart, tend=0;
-    #endif
-    
-
-    #ifdef TIMEIT
-    tstart = omp_get_wtime();
-    #endif
     /* static evolution loop */
     for (int step = 1; step <=n ; step++){
 
@@ -282,15 +285,23 @@ static_evolution(char* full_grid, char* neigh, const int n, const int s,
         }
 
     }/* evolution step */
+
+    /* stop timer and write measurements in array */
     #ifdef TIMEIT
     tend = omp_get_wtime()-tstart;
+
+    time_array[thid] = tend;
+    time_array[numthreads + thid] = total_time_comm;
+    time_array[2*numthreads + thid] = total_time_grid;
+    time_array[3*numthreads + thid] = total_time_idle;
+    time_array[4*numthreads + thid] = total_time_write;
     #endif
 
     free(cp_fname);
-    #ifdef TIMEIT
-    // printf("# nprocs, nthreads, total, procrank, thid, comm, grid, idle, write\n")
-    printf("%d,%d,%f,%d,%d,%f,%f,%f,%f\n",numproc,numthreads,tend, procrank, thid, total_time_comm, total_time_grid, total_time_idle, total_time_write);
-    //printf("(p: %d, t: %d) Comm: %f, Grid: %f, Idle: %f, Write: %f\n", procrank, thid, total_time_comm, total_time_grid, total_time_idle, total_time_write);
-    #endif
+    // #ifdef TIMEIT
+    // // printf("# nprocs, nthreads, total, procrank, thid, comm, grid, idle, write\n")
+    // printf("%d,%d,%f,%d,%d,%f,%f,%f,%f\n",numproc,numthreads,tend, procrank, thid, total_time_comm, total_time_grid, total_time_idle, total_time_write);
+    // //printf("(p: %d, t: %d) Comm: %f, Grid: %f, Idle: %f, Write: %f\n", procrank, thid, total_time_comm, total_time_grid, total_time_idle, total_time_write);
+    // #endif
 
 }

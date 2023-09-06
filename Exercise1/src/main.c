@@ -18,6 +18,10 @@
 #define ORDERED 0
 #define STATIC  1
 
+#ifdef TIMEIT
+double* time_array = NULL;
+#endif
+
 
 int main(int argc, char** argv){
 
@@ -274,48 +278,66 @@ int main(int argc, char** argv){
         }
         MPI_File_close(&fh);
 
-        // #ifdef TIMEIT
-        // double tstart,tend;
-        // tstart = omp_get_wtime();
-        // #endif
         #pragma omp parallel
         {
+            #ifdef TIMEIT
+            #pragma omp single
+                time_array = (double*)malloc(5*omp_get_num_threads() * sizeof(double));
+            #endif
             (*evolution)(mygrid,myneigh,n,s,
                         maxval,xsize,ysize,
                         procwork, procoffset,
                         thwork, thoffset);
         }
-        // #ifdef TIMEIT
-        // tend = omp_get_wtime()-tstart;
 
-        // double* times = NULL;
-        // if (procrank == 0){
-        //     times = (double*)malloc(numproc * sizeof(double));
-        // }
-        // MPI_Gather(&tend, 1, MPI_DOUBLE, times, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        // if (procrank==0){
-        //     int numthreads;
-        //     #pragma omp parallel
-        //     {
-        //         #pragma omp single
-        //         numthreads = omp_get_num_threads();
-        //     }
-        //     FILE* timefh;
-        //     if( (timefh = fopen(timefile,"a")) )
-        //     {
-        //         fprintf(timefh,"%d,%d,",numproc,numthreads);
-        //         for (int i =0; i < numproc; i++){
-        //             fprintf(timefh,"%f,",times[i]);
-        //         }
-        //         fprintf(timefh,"\n");
-        //         fclose(timefh);
-        //     } else {
-        //         printf("Couldn't write times.\n");
-        //     }
-        // }
-        // free(times);
-        // printf("Elapsed time: %f s\n",tend);
-        // #endif
+        /* process the measurements, extracting maximum times and writing on file */
+        #ifdef TIMEIT
+        double* max = (double*)calloc(5,sizeof(double));
+        int numthreads;
+        #pragma omp parallel
+            #pragma omp master
+            numthreads = omp_get_num_threads();
+
+        for (int i = 0;i<5;i++){
+            int ii = i * numthreads;
+            for (int j = 0; j < numthreads; j++){
+                if (time_array[ii + j] > max[i]){
+                    max[i] = time_array[ii + j];
+                }
+            }
+        }
+
+        double* local_maxs = NULL;
+        double* global_max = NULL;
+        if(procrank == 0){
+            local_maxs = (double*)malloc(5 * numproc * sizeof(double));
+            global_max = (double*)calloc(5,sizeof(double));
+        }
+        MPI_Gather(max, 5, MPI_DOUBLE, local_maxs, 5, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        if (procrank == 0){
+            for (int j = 0; j < 5; j++){
+                for (int i = 0;i<numproc;i++){
+                    if (local_maxs[i * 5 + j] > global_max[j]){
+                        global_max[j] = local_maxs[i * 5 + j];
+                    }
+                }
+            }
+            
+            FILE* timefh;
+            if( (timefh = fopen(timefile,"a")) )
+            {
+                fprintf(timefh,"%d,%d,%f,%f,%f,%f,%f\n",numproc,numthreads,global_max[0],global_max[1],global_max[2],global_max[3],global_max[4]);
+                fclose(timefh);
+            } else {
+                printf("Couldn't write times.\n");
+            }
+        }
+
+        free(time_array);
+        free(max);
+        free(local_maxs);
+        free(global_max);
+        #endif
 
         free(mygrid);
         free(myneigh);

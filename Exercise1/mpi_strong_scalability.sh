@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=64
 #SBATCH --time=00:30:00
 
-modoule load architecture/AMD
+module load architecture/AMD
 module load openMPI/4.1.5/gnu/12.2.1
 
 echo Running MPI strong scalability test.

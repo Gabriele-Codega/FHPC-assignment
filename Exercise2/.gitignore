@@ -1,0 +1,5 @@
+# various
+*.out
+
+# executable
+*.x

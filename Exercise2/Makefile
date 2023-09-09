@@ -9,7 +9,7 @@ OPENBLASROOT=${OPENBLAS_ROOT}
 BLISROOT=/u/dssc/gcodeg00/myblis
 
 # precision flag
-PFLAG = -DUSE_SINGLE
+PFLAG = -DUSE_DOUBLE
 
 cpu: gemm_mkl.x gemm_oblas.x gemm_blis.x
 

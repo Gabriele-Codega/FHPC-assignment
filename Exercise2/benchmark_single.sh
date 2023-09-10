@@ -23,10 +23,10 @@ for place in "${places[@]}"
 do 
     export OMP_PLACES=$place
 
-    fname=data/epyc/$1_benchmark_double_${OMP_PLACES}_${OMP_PROC_BIND}.csv
+    fname=data/epyc/$1_benchmark_single_${OMP_PLACES}_${OMP_PROC_BIND}.csv
 
     touch $fname
-    echo "# running on EPYC" >>$fname
+    echo "# running on THIN" >>$fname
     echo "# thread allocation policy: $OMP_PLACES">>$fname
     echo "# m, n, k, time, gflops">>$fname
 
@@ -34,7 +34,7 @@ do
     do
         for i in $(seq 1 5)
         do
-            srun -n 1 ./gemm_$1.x $n $n $n >> $fname
+            srun -n 1 ./gemm_$1_single.x $n $n $n >> $fname
         done
     done
 done

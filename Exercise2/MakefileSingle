@@ -1,0 +1,26 @@
+### MKL libraries
+###
+###
+MKL= -L${MKLROOT}/lib/intel64  -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
+
+### OpenBLAS libraries 
+OPENBLASROOT=${OPENBLAS_ROOT}
+### BLIS library
+BLISROOT=/u/dssc/gcodeg00/myblis
+
+# precision flag
+PFLAG = -DUSE_SINGLE
+
+cpu: gemm_mkl_single.x gemm_oblas_single.x gemm_blis_single.x
+
+
+gemm_mkl_single.x: gemm.c
+	gcc $(PFLAG) -DMKL $^ -m64 -I${MKLROOT}/include $(MKL)  -o $@
+
+gemm_oblas_single.x: gemm.c
+	gcc $(PFLAG) -DOPENBLAS $^ -m64 -I${OPENBLASROOT}/include -L/${OPENBLASROOT}/lib -lopenblas -lpthread -o $@ -fopenmp
+
+gemm_blis_single.x: gemm.c
+	gcc $(PFLAG)  -DBLIS $^ -m64 -I${BLISROOT}/include/blis -L/${BLISROOT}/lib -o $@ -lpthread  -lblis -fopenmp -lm
+clean:
+	rm -rf *.x

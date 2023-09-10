@@ -1,5 +1,5 @@
 #!/bin/sh
-module load architecture/AMD
+module load architecture/Intel
 module load mkl/latest
 module load openBLAS/0.3.23-omp
 

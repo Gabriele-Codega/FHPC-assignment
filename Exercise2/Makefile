@@ -6,7 +6,7 @@ MKL= -L${MKLROOT}/lib/intel64  -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lgo
 ### OpenBLAS libraries 
 OPENBLASROOT=${OPENBLAS_ROOT}
 ### BLIS library
-BLISROOT=/u/dssc/gcodeg00/myblis
+BLISROOT=/u/dssc/gcodeg00/myblis-intel
 
 # precision flag
 PFLAG = -DUSE_DOUBLE

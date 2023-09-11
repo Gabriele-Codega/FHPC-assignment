@@ -15,7 +15,7 @@ export LD_LIBRARY_PATH=/u/dssc/gcodeg00/myblis/lib:$LD_LIBRARY_PATH
 export OMP_PROC_BIND=spread
 export OMP_PLACES=cores
 
-fname=data/epyc/$1_scalability_single.csv
+fname=data/epyc/$1_scalability_double.csv
 
 touch $fname
 echo "# running on EPYC" >>$fname
@@ -29,7 +29,11 @@ for n in $(seq 1 $SLURM_CPUS_PER_TASK)
 do 
     export BLIS_NUM_THREADS=$n
     export OMP_NUM_THREADS=$n
-    srun -n 1 gemm_$1_single.x $size $size $size >>$fname
+    for i in $(seq 1 5)
+    do
+        srun -n 1 gemm_$1.x $size $size $size >>$fname
+    done
+    echo "" >>$fname
 done
 
 squeue -j $SLURM_JOB_ID

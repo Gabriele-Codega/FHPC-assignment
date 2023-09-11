@@ -17,7 +17,7 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 declare -a places=("threads" "cores" "numa_domains" "sockets" "ll_caches")
 
-export OMP_PROC_BIND=close
+export OMP_PROC_BIND=spread
 
 for place in "${places[@]}"
 do 
@@ -26,7 +26,7 @@ do
     fname=data/epyc/$1_benchmark_single_${OMP_PLACES}_${OMP_PROC_BIND}.csv
 
     touch $fname
-    echo "# running on THIN" >>$fname
+    echo "# running on EPYC" >>$fname
     echo "# thread allocation policy: $OMP_PLACES">>$fname
     echo "# m, n, k, time, gflops">>$fname
 

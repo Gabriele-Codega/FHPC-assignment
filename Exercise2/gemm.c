@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
 
 #ifdef MKL 
 #include "mkl_cblas.h"
@@ -96,16 +97,20 @@ int main(int argc, char** argv)
       return 1;
     }
 
+    #pragma omp parallel
+    {
+    #pragma omp for
     for (i = 0; i < (m*k); i++) {
         A[i] = (MYFLOAT)(i+1);
     }
-
+    #pragma omp for
     for (i = 0; i < (k*n); i++) {
         B[i] = (MYFLOAT)(-i-1);
     }
-
+    #pragma omp for
     for (i = 0; i < (m*n); i++) {
         C[i] = 0.0;
+    }
     }
 
     sleep(1);

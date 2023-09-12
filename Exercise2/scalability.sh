@@ -1,24 +1,24 @@
 #!/bin/sh
 #SBATCH --job-name=gemm_benchmark
-#SBATCH --partition=THIN
-
+#SBATCH --partition=EPYC
+#SBATCH --exclusive
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=24
+#SBATCH --cpus-per-task=64
 #SBATCH --time=02:00:00
 
 module load architecture/AMD
 module load mkl/latest
 module load openBLAS/0.3.23-omp
-export LD_LIBRARY_PATH=/u/dssc/gcodeg00/myblis-intel/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/u/dssc/gcodeg00/myblis/lib:$LD_LIBRARY_PATH
 
 export OMP_PROC_BIND=spread
 export OMP_PLACES=cores
 
-fname=data/thin/$1_scalability_single.csv
+fname=data/epyc/$1_scalability_double_numa.csv
 
 touch $fname
-echo "# running on THIN" >>$fname
+echo "# running on EPYC" >>$fname
 echo "# thread allocation policy: $OMP_PLACES, $OMP_PROC_BIND">>$fname
 echo "# max number of threads: $SLURM_CPUS_PER_TASK">>$fname
 echo "# m, n, k, time, gflops">>$fname
@@ -31,7 +31,7 @@ do
     export OMP_NUM_THREADS=$n
     for i in $(seq 1 5)
     do
-        srun -n 1 gemm_$1_single.x $size $size $size >>$fname
+        srun -n 1 gemm_$1.x $size $size $size >>$fname
     done
     echo "" >>$fname
 done

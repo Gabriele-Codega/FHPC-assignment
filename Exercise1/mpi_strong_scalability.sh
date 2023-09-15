@@ -3,10 +3,10 @@
 #SBATCH --job-name=Game_of_Life
 #SBATCH --exclusive
 #SBATCH --nodes=4
-#SBATCH --ntasks=8
-#SBATCH --ntasks-per-node=2
-#SBATCH --cpus-per-task=64
-#SBATCH --time=00:10:00
+#SBATCH --ntasks=32
+#SBATCH --ntasks-per-node=8
+#SBATCH --cpus-per-task=16
+#SBATCH --time=02:00:00
 
 module load architecture/AMD
 module load openMPI/4.1.5/gnu/12.2.1
@@ -16,7 +16,7 @@ export OMP_PLACES=cores
 export OMP_PROC_BIND=spread
 
 echo Running MPI strong scalability test.
-echo Size is 10k, for 100 steps.
+echo Size is 10k, for 1000 steps, by numa.
 mpirun -np 8 GameOfLife -i -f imgs/mpi_strong_init.pgm -k 10000,10000
 
 touch $1
@@ -26,7 +26,7 @@ do
     echo Currently using $n tasks.
     for i in $(seq 1 5)
     do
-        mpirun -np $n --map-by socket --report-bindings GameOfLife -r -f imgs/mpi_strong_init.pgm -n 100 -s 0 -e 1 -t $1
+        mpirun -np $n --map-by numa --report-bindings GameOfLife -r -f imgs/mpi_strong_init.pgm -n 1000 -s 0 -e 1 -t $1
     done
 done
 echo done!

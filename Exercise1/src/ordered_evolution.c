@@ -214,7 +214,7 @@ ordered_evolution(char* full_grid, char* neigh, const int n, const int s,
 
         /* write a checkpoint if required */
         if (step%s == 0){            
-            write_checkpoint(cp_fname,step,grid,procrank,procoffset,thoffset,thwork,xsize,ysize,maxval);
+            write_checkpoint(cp_fname,step,grid,procrank,procoffset,procwork,thoffset,thwork,xsize,ysize,maxval);
         }
 
     } /* evolution step */

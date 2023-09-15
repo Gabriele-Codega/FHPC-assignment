@@ -3,8 +3,8 @@
 #SBATCH --partition=EPYC
 #SBATCH --job-name=Game_of_Life
 #SBATCH --exclusive
-#SBATCH --nodes=1
-#SBATCH --ntasks=2
+#SBATCH --nodes=2
+#SBATCH --ntasks=4
 #SBATCH --ntasks-per-node=2
 #SBATCH --cpus-per-task=64
 #SBATCH --time=01:00:00
@@ -16,7 +16,7 @@ export OMP_PLACES=cores
 export OMP_PROC_BIND=spread
 
 echo Running OMP strong scalability test.
-mpirun -np $SLURM_NTASKS GameOfLife -i -f imgs/omp_strong_init.pgm -k 1000,1000
+mpirun -np $SLURM_NTASKS GameOfLife -i -f imgs/omp_strong_init.pgm -k 10000,10000
 
 
 touch $1
@@ -27,7 +27,7 @@ do
     echo Currently using $n threads.
     for i in $(seq 1 5)
     do
-        mpirun -np $SLURM_NTASKS --map-by socket GameOfLife -r -f imgs/omp_strong_init.pgm -n 5000 -s 0 -e 1 -t $1
+        mpirun -np $SLURM_NTASKS --map-by socket GameOfLife -r -f imgs/omp_strong_init.pgm -n 100 -s 0 -e 1 -t $1
     done
 done
 

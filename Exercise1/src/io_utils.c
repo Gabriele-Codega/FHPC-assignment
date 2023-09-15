@@ -62,6 +62,6 @@ write_header(const char* fname, const int xsize, const int ysize, const int maxv
 
 extern void 
 write_checkpoint(char* fname, const int step, const char* grid,
-                const int procrank, const int procoffset,
+                const int procrank, const int procoffset, const int procwork,
                 const int thoffset, const int thwork,
                 const int xsize, const int ysize, const int maxval);

@@ -21,7 +21,7 @@ inline void write_header(const char* fname, const int xsize, const int ysize, co
 
 inline void 
 write_checkpoint(char* fname, const int step, const char* grid,
-                const int procrank, const int procoffset,
+                const int procrank, const int procoffset, const int procwork,
                 const int thoffset, const int thwork,
                 const int xsize, const int ysize, const int maxval)
 {
@@ -45,12 +45,12 @@ write_checkpoint(char* fname, const int step, const char* grid,
 
         writeoffset += start;
     }
-    #pragma omp barrier
 
     MPI_Status status;
-    #pragma omp critical
-        MPI_File_write_at_all(fhout,writeoffset+procoffset+thoffset, (void*)(grid+thoffset),thwork,MPI_BYTE,&status);
-    
+    #pragma omp master
+        // MPI_File_write_at_all(fhout,writeoffset+procoffset+thoffset, (void*)(grid+thoffset),thwork,MPI_BYTE,&status);
+        MPI_File_write_at_all(fhout,writeoffset+procoffset, (void*)(grid),procwork,MPI_BYTE,&status);
+
     #pragma omp barrier
     #pragma omp single
         MPI_File_close(&fhout);

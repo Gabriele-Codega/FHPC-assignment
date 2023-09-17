@@ -256,9 +256,14 @@ int main(int argc, char** argv){
         char* myneigh = NULL; 
         if(e == STATIC){
             myneigh = (char*)malloc(procwork*xsize);
+            if(!myneigh){
+                printf("Could not allcoate neighbours. Aborting.\n");
+                MPI_Finalize();
+                exit(3);
+            }
         }
-        if(!mygrid || !myneigh){
-            printf("Could not allcoate grid or neighbours. Aborting.\n");
+        if(!mygrid){
+            printf("Could not allcoate grid. Aborting.\n");
             MPI_Finalize();
             exit(3);
         }

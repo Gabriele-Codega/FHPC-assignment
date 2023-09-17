@@ -9,6 +9,9 @@
 #define BOT_TO_TOP 1
 #define TOP_TO_BOT 2
 
+#ifdef TIMEIT
+extern double* time_array;
+#endif
 
 void 
 ordered_evolution(char* full_grid, char* neigh, const int n, const int s, 
@@ -16,6 +19,17 @@ ordered_evolution(char* full_grid, char* neigh, const int n, const int s,
                 const int procwork, const int procoffset,
                 const int thwork, const int thoffset)
 {
+    /* initialise timing variables */
+    #ifdef TIMEIT
+    double tstart_comm, total_time_comm=0;
+    double tstart_grid, total_time_grid=0;
+    double tstart_idle, total_time_idle=0;
+    double tstart_write, total_time_write=0;
+    double tstart, tend=0;
+
+    tstart = omp_get_wtime();
+    #endif
+
     /* figure out ranks and ids */
     int procrank;
     int numproc;
@@ -46,11 +60,6 @@ ordered_evolution(char* full_grid, char* neigh, const int n, const int s,
     MPI_Request snd_bot, rcv_bot, snd_top, rcv_top;
     snd_bot = rcv_bot = snd_top = rcv_top = MPI_REQUEST_NULL;
 
-    #ifdef TIMEIT
-    double tstart_comm, total_time_comm=0;
-    double tstart_grid, total_time_grid=0;
-    double tstart_idle, total_time_idle=0;
-    #endif
 
 
     /* send initial boundary from last to first process */
@@ -213,15 +222,28 @@ ordered_evolution(char* full_grid, char* neigh, const int n, const int s,
 
 
         /* write a checkpoint if required */
-        if (step%s == 0){            
+        if (step%s == 0){    
+            #ifdef TIMEIT
+            tstart_write = omp_get_wtime();
+            #endif        
             write_checkpoint(cp_fname,step,grid,procrank,procoffset,procwork,thoffset,thwork,xsize,ysize,maxval);
+            #ifdef TIMEIT
+            total_time_write += omp_get_wtime()-tstart_write;
+            #endif
         }
 
     } /* evolution step */
     free(cp_fname);
     if (thid == numthreads - 1)
-        MPI_Cancel(&snd_bot);
+        MPI_Cancel(&snd_bot); //might also have to cancel send top
+    /* stop timer and write measurements in array */
     #ifdef TIMEIT
-    printf("(p: %d, t: %d) Comm: %f, Grid: %f, Idle: %f\n", procrank, thid, total_time_comm, total_time_grid, total_time_idle);
+    tend = omp_get_wtime()-tstart;
+
+    time_array[thid] = tend;
+    time_array[numthreads + thid] = total_time_comm;
+    time_array[2*numthreads + thid] = total_time_grid;
+    time_array[3*numthreads + thid] = total_time_idle;
+    time_array[4*numthreads + thid] = total_time_write;
     #endif
 }

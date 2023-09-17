@@ -15,11 +15,15 @@ module load openMPI/4.1.5/gnu/12.2.1
 export OMP_PLACES=cores
 export OMP_PROC_BIND=spread
 
+size=10000
+nsteps=100
+
 echo Running OMP strong scalability test.
-mpirun -np $SLURM_NTASKS GameOfLife -i -f imgs/omp_strong_init.pgm -k 10000,10000
+mpirun -np $SLURM_NTASKS GameOfLife -i -f imgs/omp_strong_init.pgm -k $size,$size
 
 
 touch $1
+echo "# ordered evolution: size = $size, steps = $nsteps" >> $1
 echo "# nprocs, nthreads, total, comm, grid, idle, write" >> $1
 for n in $(seq 1 $SLURM_CPUS_PER_TASK)
 do
@@ -27,7 +31,7 @@ do
     echo Currently using $n threads.
     for i in $(seq 1 5)
     do
-        mpirun -np $SLURM_NTASKS --map-by socket GameOfLife -r -f imgs/omp_strong_init.pgm -n 100 -s 0 -e 1 -t $1
+        mpirun -np $SLURM_NTASKS --map-by socket GameOfLife -r -f imgs/omp_strong_init.pgm -n $nsteps -s 0 -e 1 -t $1
     done
 done
 

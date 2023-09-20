@@ -15,7 +15,7 @@ cpu: gemm_mkl_single.x gemm_oblas_single.x gemm_blis_single.x
 
 
 gemm_mkl_single.x: gemm.c
-	gcc $(PFLAG) -DMKL $^ -m64 -I${MKLROOT}/include $(MKL)  -o $@
+	gcc $(PFLAG) -DMKL $^ -m64 -I${MKLROOT}/include $(MKL) -fopenmp  -o $@
 
 gemm_oblas_single.x: gemm.c
 	gcc $(PFLAG) -DOPENBLAS $^ -m64 -I${OPENBLASROOT}/include -L/${OPENBLASROOT}/lib -lopenblas -lpthread -o $@ -fopenmp

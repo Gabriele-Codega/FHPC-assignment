@@ -164,7 +164,6 @@ ordered_evolution(char* full_grid, char* neigh, const int n, const int s,
                 tstart_comm = omp_get_wtime();
                 #endif
                 MPI_Wait(&rcv_bot,MPI_STATUS_IGNORE);
-                // MPI_Wait(&snd_bot,MPI_STATUS_IGNORE); //why??
                 #ifdef TIMEIT
                 total_time_comm += omp_get_wtime()-tstart_comm;
                 #endif
@@ -235,10 +234,30 @@ ordered_evolution(char* full_grid, char* neigh, const int n, const int s,
     } /* evolution step */
     free(cp_fname);
     if (thid == numthreads - 1)
-        MPI_Cancel(&snd_bot); //might also have to cancel send top
-    #pragma omp barrier //needed?
+    {
+        if(snd_bot != MPI_REQUEST_NULL){
+            MPI_Cancel(&snd_bot);
+            MPI_Request_free(&snd_bot);
+        }
+
+        if(rcv_bot != MPI_REQUEST_NULL){
+            MPI_Cancel(&rcv_bot); 
+            MPI_Request_free(&rcv_bot);
+        }
+
+    }
+    #pragma omp barrier
     #pragma omp master
-        MPI_Cancel(&snd_top);
+    {
+        if(snd_top != MPI_REQUEST_NULL){
+            MPI_Cancel(&snd_top);
+            MPI_Request_free(&snd_top);
+        }
+        if(rcv_top != MPI_REQUEST_NULL){
+            MPI_Cancel(&rcv_top); 
+            MPI_Request_free(&rcv_top);
+        }
+    }
     #pragma omp barrier
     /* stop timer and write measurements in array */
     #ifdef TIMEIT

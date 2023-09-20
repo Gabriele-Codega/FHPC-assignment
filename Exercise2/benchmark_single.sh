@@ -1,13 +1,13 @@
 #!/bin/sh
 #SBATCH --job-name=gemm_benchmark
-#SBATCH --partition=THIN
+#SBATCH --partition=EPYC
 #SBATCH --exclusive
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=12
-#SBATCH --time=02:00:00
+#SBATCH --cpus-per-task=64
+#SBATCH --time=00:40:00
 
-module load architecture/Intel
+module load architecture/AMD
 module load mkl/latest
 module load openBLAS/0.3.23-omp
 export LD_LIBRARY_PATH=/u/dssc/gcodeg00/myblis/lib:$LD_LIBRARY_PATH

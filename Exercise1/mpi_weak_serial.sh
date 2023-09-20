@@ -1,5 +1,5 @@
 #!/bin/sh
-#SBATCH --output=mpi_weak_%j.out
+#SBATCH --output=mpi_weak_serial_%j.out
 #SBATCH --partition=EPYC
 #SBATCH --job-name=Game_of_Life
 #SBATCH --exclusive
@@ -17,15 +17,9 @@ echo size is 10k x 1k per process. 1000 steps. Map by numa.
 touch $1
 echo "# nprocs, nthreads, total, comm, grid, idle, write" >> $1
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-for n in $(seq 1 $SLURM_NTASKS)
+for n in $(seq 1 32)
 do
-    echo Currently using $n tasks.
-    echo Generating grid.
-    mpirun -np $n GameOfLife -i -f imgs/weak_init_$n.pgm -k 10000,$((1000 * $n))
-    echo Running evolution.
-    for i in $(seq 1 5)
-    do
-        mpirun -np $n --map-by numa GameOfLife -r -f imgs/weak_init_$n.pgm -n 1000 -s 0 -e 1 -t $1
-    done
+    echo Current size is $n.
+    mpirun -np 1 --map-by numa GameOfLife -r -f imgs/weak_init_$n.pgm -n 1000 -s 0 -e 1 -t $1
 done
 echo done!

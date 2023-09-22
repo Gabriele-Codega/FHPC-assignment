@@ -5,7 +5,7 @@
 
 
 void read_header(const char* fname , int* params);
-void read_data(MPI_File , char*, const int, const MPI_Offset , const MPI_Offset, const int );
+
 inline void write_header(const char* fname, const int xsize, const int ysize, const int maxval, int* offset)
 {
     FILE* image_file;
@@ -22,7 +22,6 @@ inline void write_header(const char* fname, const int xsize, const int ysize, co
 inline void 
 write_checkpoint(char* fname, const int step, const char* grid,
                 const int procrank, const int procoffset, const int procwork,
-                const int thoffset, const int thwork,
                 const int xsize, const int ysize, const int maxval)
 {
     snprintf(fname,26,"imgs/checkpoint_%05d.pgm",step) >= 26 ? abort() : (void)0;
@@ -48,7 +47,6 @@ write_checkpoint(char* fname, const int step, const char* grid,
 
     MPI_Status status;
     #pragma omp master
-        // MPI_File_write_at_all(fhout,writeoffset+procoffset+thoffset, (void*)(grid+thoffset),thwork,MPI_BYTE,&status);
         MPI_File_write_at_all(fhout,writeoffset+procoffset, (void*)(grid),procwork,MPI_BYTE,&status);
 
     #pragma omp barrier

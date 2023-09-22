@@ -113,21 +113,14 @@ int main(int argc, char** argv){
                 MPI_Comm_size(MPI_COMM_WORLD,&numproc);
                 MPI_Comm_rank(MPI_COMM_WORLD,&procrank);
             }
-            int numthreads = omp_get_num_threads();
             int thid = omp_get_thread_num();
 
 
             int procwork ;
             MPI_Offset procoffset;
-            int thwork;
-            int thoffset;
 
             procwork = ysize/numproc + (procrank< (ysize%numproc));
             procoffset = ysize/numproc * procrank + (procrank >= (ysize%numproc)) * (ysize%numproc) + (procrank < (ysize%numproc)) * procrank;
-            thwork = procwork/numthreads + (thid< (procwork%numthreads));
-            thoffset = procwork/numthreads * thid + (thid >= (procwork%numthreads)) * (procwork%numthreads) + (thid < (procwork%numthreads)) * thid;
-            thwork *= xsize;
-            thoffset *= xsize;
             procwork *= xsize;
             procoffset *= xsize;
 
@@ -172,11 +165,10 @@ int main(int argc, char** argv){
 
                 writeoffset += start;
             }
-            #pragma omp barrier
 
             MPI_Status status;
-            #pragma omp critical
-                MPI_File_write_at_all(fhout,writeoffset+procoffset+thoffset, (void*)(grid+thoffset),thwork,MPI_BYTE,&status);
+            #pragma omp master
+                MPI_File_write_at_all(fhout,writeoffset+procoffset, (void*)(grid),procwork,MPI_BYTE,&status);
             #pragma omp barrier
             #pragma omp single
                 MPI_File_close(&fhout);
@@ -188,7 +180,6 @@ int main(int argc, char** argv){
         /* select correct evolution routine */
         void (*evolution)(char* , char* , const int , const int , 
                         const int , const int , const int ,
-                        const int , const int ,
                         const int , const int ) = NULL;
         switch (e)
         {
@@ -279,7 +270,11 @@ int main(int argc, char** argv){
             procwork *= xsize;
             procoffset *= xsize;
 
-            read_data(fh, mygrid+xsize,thwork, thoffset, procoffset, globaloffset);
+            MPI_Status status;
+            #pragma omp critical
+                MPI_File_read_at_all(fh,globaloffset+procoffset+thoffset, (void*)(mygrid+xsize+thoffset),thwork,MPI_BYTE,&status);
+            
+            #pragma omp barrier
         }
         MPI_File_close(&fh);
 
@@ -291,8 +286,7 @@ int main(int argc, char** argv){
             #endif
             (*evolution)(mygrid,myneigh,n,s,
                         maxval,xsize,ysize,
-                        procwork, procoffset,
-                        thwork, thoffset);
+                        procwork, procoffset);
         }
 
         /* process the measurements, extracting maximum times and writing on file */

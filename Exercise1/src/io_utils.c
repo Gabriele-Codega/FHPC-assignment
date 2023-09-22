@@ -47,21 +47,10 @@ void read_header(const char* fname, int* params){
     fclose(image_file);
 }
 
-
-void read_data(MPI_File fh, char* img,const int thwork, const MPI_Offset thoffset, const MPI_Offset procoffset, const int globaloffset){
-    
-    MPI_Status status;
-    #pragma omp critical
-        MPI_File_read_at_all(fh,globaloffset+procoffset+thoffset, (void*)(img+thoffset),thwork,MPI_BYTE,&status);
-    
-    #pragma omp barrier
-}
-
 extern void 
 write_header(const char* fname, const int xsize, const int ysize, const int maxval, int* offset);
 
 extern void 
 write_checkpoint(char* fname, const int step, const char* grid,
                 const int procrank, const int procoffset, const int procwork,
-                const int thoffset, const int thwork,
                 const int xsize, const int ysize, const int maxval);

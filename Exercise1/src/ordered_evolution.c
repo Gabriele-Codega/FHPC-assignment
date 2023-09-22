@@ -181,7 +181,9 @@ ordered_evolution(char* full_grid, char* neigh, const int n, const int s,
                         nneigh += grid[iirow+jjcol] * (!(iirow == irow && jjcol == j));
                     }
                 }
-                grid[irow + j] = grid[irow+j] * (nneigh == 2) + (nneigh == 3);
+                /* Uncomment the following line to use standard rules */
+                // grid[irow + j] = grid[irow+j] * (nneigh == 2) + (nneigh == 3);
+                grid[irow + j] = (nneigh == 2) + (nneigh == 3);
             }
             #ifdef TIMEIT
             total_time_grid += omp_get_wtime()-tstart_grid;

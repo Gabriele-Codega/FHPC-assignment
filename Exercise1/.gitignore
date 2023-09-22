@@ -13,6 +13,7 @@ test/
 
 # data
 *.pgm
+*.lock
 !imgs/*.pgm
 
 # executable

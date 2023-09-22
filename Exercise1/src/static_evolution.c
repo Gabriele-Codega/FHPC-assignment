@@ -263,7 +263,9 @@ static_evolution(char* full_grid, char* neigh, const int n, const int s,
         for (int i = 0; i<procwork/xsize;i++){
             int irow = i *xsize; 
             for (int j = 0;j<xsize;j++){
-                grid[irow + j] = grid[irow+j] * (neigh[irow+j] == 2) + (neigh[irow + j] == 3);
+                /* Uncomment the following line to use standard rules */
+                // grid[irow + j] = grid[irow+j] * (neigh[irow+j] == 2) + (neigh[irow + j] == 3);
+                grid[irow + j] = (neigh[irow+j] == 2) + (neigh[irow + j] == 3);
             }
         }
         #ifdef TIMEIT
